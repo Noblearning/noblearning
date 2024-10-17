@@ -7,9 +7,9 @@
 
     <title>Week 7 - Finding Your Community </title>
 
-    <link type="text/css" rel="stylesheet" href="language/lib/icomoon.css">
-    <script type="text/javascript" src="language/lib/player-0.0.11.min.js"></script>
-    <script type="text/javascript" src="language/lib/lzwcompress.js"></script>
+    <link type="text/css" rel="stylesheet" href="language-lib/icomoon.css">
+    <script type="text/javascript" src="language-lib/player-0.0.11.min.js"></script>
+    <script type="text/javascript" src="language-lib/lzwcompress.js"></script>
 
     <!-- Resize Hack -->
     <script type="text/javascript">
@@ -42,7 +42,7 @@
                 link.onload = resolve
                 link.onerror = reject
                 link.rel = 'stylesheet'
-                link.href = 'language/lib/' + manifest['.css'][idx]
+                link.href = 'language-lib/' + manifest['.css'][idx]
                 document.body.appendChild(link)
               }))
             }
@@ -54,7 +54,7 @@
                 var script = document.createElement('script')
                 script.onload = resolve
                 script.onerror = reject
-                script.src = 'lanugage/lib/' + manifest['.js'][idx]
+                script.src = 'language-lib/' + manifest['.js'][idx]
                 document.body.appendChild(script)
               }))
             }
@@ -112,7 +112,7 @@
             console.warn(`Could not load locale "${name}"`)
             name = window.i18n.available[0]
           }
-          const encoded = await __loadJsonp(`course:${name}`, `language/locales/${name}.js`)
+          const encoded = await __loadJsonp(`course:${name}`, `language-locales/${name}.js`)
           const courseData = deserialize(encoded)
           return courseData
         }
@@ -513,11 +513,11 @@ function reportScore(score) {
 }
 
 function resolvePath(path) {
-  return ('language/assets/').concat(path);
+  return ('language-assets/').concat(path);
 }
 
 function resolveFontPath(font) {
-  return ('language/lib/fonts/').concat(font.key.split('/').reverse()[0]);
+  return ('language-lib/fonts/').concat(font.key.split('/').reverse()[0]);
 }
 
 function setLessonProgress(lessonProgress) {

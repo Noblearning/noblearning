@@ -7,9 +7,9 @@
 
     <title>CSCM1010 - Module 4: Once Upon a Time: Storytelling Foundations </title>
 
-    <link type="text/css" rel="stylesheet" href="lib/icomoon.css">
-    <script type="text/javascript" src="lib/player-0.0.11.min.js"></script>
-    <script type="text/javascript" src="lib/lzwcompress.js"></script>
+    <link type="text/css" rel="stylesheet" href="marketing-lib/icomoon.css">
+    <script type="text/javascript" src="marketing-lib/player-0.0.11.min.js"></script>
+    <script type="text/javascript" src="marketing-lib/lzwcompress.js"></script>
 
     <!-- Resize Hack -->
     <script type="text/javascript">
@@ -42,7 +42,7 @@
                 link.onload = resolve
                 link.onerror = reject
                 link.rel = 'stylesheet'
-                link.href = 'lib/' + manifest['.css'][idx]
+                link.href = 'marketing-lib/' + manifest['.css'][idx]
                 document.body.appendChild(link)
               }))
             }
@@ -54,7 +54,7 @@
                 var script = document.createElement('script')
                 script.onload = resolve
                 script.onerror = reject
-                script.src = 'lib/' + manifest['.js'][idx]
+                script.src = 'marketing-lib/' + manifest['.js'][idx]
                 document.body.appendChild(script)
               }))
             }
@@ -112,7 +112,7 @@
             console.warn(`Could not load locale "${name}"`)
             name = window.i18n.available[0]
           }
-          const encoded = await __loadJsonp(`course:${name}`, `locales/${name}.js`)
+          const encoded = await __loadJsonp(`course:${name}`, `marketing-locales/${name}.js`)
           const courseData = deserialize(encoded)
           return courseData
         }
@@ -513,11 +513,11 @@ function reportScore(score) {
 }
 
 function resolvePath(path) {
-  return ('assets/').concat(path);
+  return ('marketing-assets/').concat(path);
 }
 
 function resolveFontPath(font) {
-  return ('lib/fonts/').concat(font.key.split('/').reverse()[0]);
+  return ('marketing-lib/fonts/').concat(font.key.split('/').reverse()[0]);
 }
 
 function setLessonProgress(lessonProgress) {
