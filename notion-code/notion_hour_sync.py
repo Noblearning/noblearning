@@ -1,16 +1,11 @@
 """
-Notion Hour Tracker Sync — Optimized
-=====================================
+Notion Hour Tracker Sync
+=========================
 Syncs hour-tracking comments to the "Actual Hours" property across your
 Notion workspace.
 
-Optimizations:
-  1. Only queries databases that have an "Actual Hours" property
-  2. On subsequent runs, only checks pages edited since the last run
-  3. Caches the last run timestamp in last_sync.txt to enable (2)
-
-First run: full scan of all relevant databases (slow, one time only)
-Subsequent runs: only pages edited in the last 15 minutes (fast)
+Only queries databases that have an "Actual Hours" property, skipping
+everything else in your workspace.
 
 Comment format:
   0.5H: onQ review
@@ -20,20 +15,16 @@ Comment format:
 Run:
   python notion_hour_sync.py            # live run
   python notion_hour_sync.py --dry-run  # preview only, no changes made
-  python notion_hour_sync.py --full     # force a full scan regardless of cache
 """
 
 import re
 import sys
 import os
 import json
-from datetime import datetime, timezone
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
-from pathlib import Path
 
-DRY_RUN  = "--dry-run" in sys.argv
-FULL_RUN = "--full" in sys.argv
+DRY_RUN = "--dry-run" in sys.argv
 
 # ─────────────────────────────────────────────
 # CONFIGURATION
@@ -44,17 +35,12 @@ FULL_RUN = "--full" in sys.argv
 # ─────────────────────────────────────────────
 NOTION_API_KEY = os.environ.get("NOTION_API_KEY", "")
 HOURS_PROPERTY = "Actual Hours"  # exact property name in your Notion databases
-CACHE_FILE     = Path(__file__).parent / "last_sync.txt"
 # ─────────────────────────────────────────────
 
 NOTION_VERSION = "2022-06-28"
 BASE_URL       = "https://api.notion.com/v1"
 HOUR_PATTERN   = re.compile(r"^(\d+(?:\.\d+)?)H:", re.IGNORECASE)
 
-
-# ─────────────────────────────────────────────
-# API
-# ─────────────────────────────────────────────
 
 def notion_request(method, path, body=None):
     url  = f"{BASE_URL}{path}"
@@ -71,10 +57,6 @@ def notion_request(method, path, body=None):
         print(f"  X API error {e.code}: {e.read().decode()}")
         return None
 
-
-# ─────────────────────────────────────────────
-# OPTIMIZATION 1: find only databases with "Actual Hours"
-# ─────────────────────────────────────────────
 
 def get_relevant_database_ids():
     """Return IDs of databases that have an 'Actual Hours' property."""
@@ -97,40 +79,13 @@ def get_relevant_database_ids():
     return db_ids
 
 
-# ─────────────────────────────────────────────
-# OPTIMIZATION 2 + 3: fetch only recently edited pages using cached timestamp
-# ─────────────────────────────────────────────
-
-def load_last_sync():
-    """Load the last sync timestamp from cache file, or None if not present."""
-    if CACHE_FILE.exists():
-        ts = CACHE_FILE.read_text().strip()
-        if ts:
-            return ts
-    return None
-
-
-def save_last_sync(ts):
-    """Save the current sync timestamp to cache file."""
-    if not DRY_RUN:
-        CACHE_FILE.write_text(ts)
-
-
-def get_pages_from_database(db_id, since=None):
-    """
-    Fetch pages from a database. If 'since' is provided, only return
-    pages edited after that timestamp (ISO 8601 string).
-    """
+def get_pages_from_database(db_id):
+    """Fetch all pages from a database."""
     pages, cursor = [], None
     while True:
         body = {"page_size": 100}
         if cursor:
             body["start_cursor"] = cursor
-        if since:
-            body["filter"] = {
-                "timestamp": "last_edited_time",
-                "last_edited_time": {"after": since}
-            }
         result = notion_request("POST", f"/databases/{db_id}/query", body)
         if not result:
             break
@@ -140,10 +95,6 @@ def get_pages_from_database(db_id, since=None):
         cursor = result.get("next_cursor")
     return pages
 
-
-# ─────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────
 
 def get_comments(page_id):
     result = notion_request("GET", f"/comments?block_id={page_id}")
@@ -182,10 +133,6 @@ def update_hours(page_id, total_hours):
     return notion_request("PATCH", f"/pages/{page_id}", body)
 
 
-# ─────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────
-
 def main():
     if not NOTION_API_KEY:
         print("\nNOTION_API_KEY environment variable is not set.")
@@ -193,29 +140,20 @@ def main():
         print("   Mac/Linux: export NOTION_API_KEY=secret_xxxx\n")
         sys.exit(1)
 
-    run_start = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
     if DRY_RUN:
         print("\nDRY RUN MODE - no changes will be made to Notion\n")
 
-    # Decide whether to do a full scan or incremental
-    last_sync = None if FULL_RUN else load_last_sync()
-    if last_sync:
-        print(f"\nIncremental run - checking pages edited since {last_sync}\n")
-    else:
-        print("\nFull scan - checking all pages in relevant databases\n")
-
-    # Optimization 1: only look at databases with "Actual Hours"
+    # Only look at databases that have the "Actual Hours" property
     db_ids = get_relevant_database_ids()
     if not db_ids:
         print("\n  No databases with 'Actual Hours' found.")
         print("  Make sure your integration is connected to your databases.\n")
         sys.exit(0)
 
-    # Collect pages across all relevant databases
+    # Collect pages from relevant databases only
     all_pages = []
     for db_id in db_ids:
-        pages = get_pages_from_database(db_id, since=last_sync)
+        pages = get_pages_from_database(db_id)
         all_pages.extend(pages)
 
     print(f"  {len(all_pages)} page(s) to check\n")
@@ -263,9 +201,6 @@ def main():
         else:
             print(f"      Failed to update\n")
             errors += 1
-
-    # Save timestamp for next incremental run
-    save_last_sync(run_start)
 
     print("-" * 50)
     if DRY_RUN:
