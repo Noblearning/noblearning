@@ -3,7 +3,7 @@ name: Notion Hour Sync
 on:
   schedule:
     - cron: "*/15 * * * *"   # every 15 minutes
-  workflow_dispatch:
+  workflow_dispatch:          # allows manual trigger from GitHub UI
 
 jobs:
   sync:
@@ -22,12 +22,3 @@ jobs:
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
         run: python notion-code/notion_hour_sync.py
-
-      # Persist last sync timestamp
-      - name: Save sync timestamp
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-          git add notion-code/.last_sync
-          git commit -m "Update sync timestamp" || exit 0
-          git push
