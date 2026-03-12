@@ -79,11 +79,22 @@ def get_relevant_database_ids():
     return db_ids
 
 
+# Statuses to exclude from scanning
+EXCLUDED_STATUSES = {"Complete", "Up for Discussion", "Not Started"}
+
 def get_pages_from_database(db_id):
-    """Fetch all pages from a database."""
+    """Fetch active pages from a database, excluding completed/inactive statuses."""
     pages, cursor = [], None
     while True:
-        body = {"page_size": 100}
+        body = {
+            "page_size": 100,
+            "filter": {
+                "and": [
+                    {"property": "Status", "status": {"does_not_equal": status}}
+                    for status in EXCLUDED_STATUSES
+                ]
+            }
+        }
         if cursor:
             body["start_cursor"] = cursor
         result = notion_request("POST", f"/databases/{db_id}/query", body)
